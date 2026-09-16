@@ -1,0 +1,146 @@
+{
+    "family": "pulsedesk-otel-ec2",
+    "containerDefinitions": [
+        {
+            "name": "cloudwatch-agent",
+            "image": "public.ecr.aws/cloudwatch-agent/cloudwatch-agent:latest",
+            "cpu": 128,
+            "memoryReservation": 128,
+            "portMappings": [
+                {
+                    "containerPort": 4318,
+                    "hostPort": 4318,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "secrets": [
+                {
+                    "name": "CW_CONFIG_CONTENT",
+                    "valueFrom": "arn:aws:ssm:us-east-1:618246140803:parameter/ecs/pulsedesk/otel-config"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/pulsedesk-otel",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "cwagent"
+                }
+            },
+            "systemControls": []
+        },
+        {
+            "name": "pulsedesk-api",
+            "image": "618246140803.dkr.ecr.us-east-1.amazonaws.com/pulsedesk",
+            "cpu": 256,
+            "memoryReservation": 512,
+            "portMappings": [
+                {
+                    "containerPort": 3000,
+                    "hostPort": 3000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+                    "value": "http/protobuf"
+                },
+                {
+                    "name": "OTEL_TRACES_SAMPLER_ARG",
+                    "value": "1"
+                },
+                {
+                    "name": "PORT",
+                    "value": "3000"
+                },
+                {
+                    "name": "DB_PORT",
+                    "value": "5432"
+                },
+                {
+                    "name": "DB_USER",
+                    "value": "root"
+                },
+                {
+                    "name": "DB_NAME",
+                    "value": "pulsedesk"
+                },
+                {
+                    "name": "DB_HOST",
+                    "value": "database-1.cg3sqq2ikrpw.us-east-1.rds.amazonaws.com"
+                },
+                {
+                    "name": "OTEL_TRACES_SAMPLER",
+                    "value": "parentbased_traceidratio"
+                },
+                {
+                    "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+                    "value": "http://localhost:4318/v1/traces"
+                },
+                {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "pulsedesk-api"
+                },
+                {
+                    "name": "DB_SSL",
+                    "value": "true"
+                },
+                {
+                    "name": "OTEL_RESOURCE_ATTRIBUTES",
+                    "value": "deployment.environment=production,aws.log.group.names=/ecs/pulsedesk-otel"
+                },
+                {
+                    "name": "NODE_ENV",
+                    "value": "production"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "value": "admin123"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "dependsOn": [
+                {
+                    "containerName": "cloudwatch-agent",
+                    "condition": "START"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/pulsedesk-otel",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "app"
+                }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+                ],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 20
+            },
+            "systemControls": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::618246140803:role/ecsTaskRole",
+    "executionRoleArn": "arn:aws:iam::618246140803:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024"
+}
