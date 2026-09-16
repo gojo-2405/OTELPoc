@@ -18,7 +18,7 @@ env:
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
   ECS_SERVICE: ${{ vars.ECS_SERVICE }}
   ECS_CONTAINER_NAME: pulsedesk-api
-  TASK_DEFINITION: pulsedesk-otel-ec2.json
+  TASK_DEFINITION: ecs/pulsedesk-otel-ec2.json
 
 jobs:
   deploy:
