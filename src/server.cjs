@@ -53,6 +53,19 @@ app.get('/api/work-items', async (_req, res, next) => {
   } catch (error) { next(error); }
 });
 
+app.get('/api/activity', async (_req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT id, title, owner, state, created_at FROM work_items ORDER BY created_at DESC LIMIT 20');
+    res.json(rows.map(item => ({
+      id: item.id,
+      message: `Work item created: ${item.title}`,
+      owner: item.owner,
+      state: item.state,
+      created_at: item.created_at
+    })));
+  } catch (error) { next(error); }
+});
+
 app.post('/api/work-items', async (req, res, next) => {
   const { title, owner = 'Unassigned', priority = 'medium' } = req.body;
   if (typeof title !== 'string' || title.trim().length < 3) return res.status(400).json({ error: 'title must contain at least 3 characters' });
