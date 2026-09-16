@@ -1,4 +1,4 @@
-name: Build and deploy PulseDesk to ECS
+name: Build and deploy PulseDesk to ECS (static credentials)
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: pulsedesk-production
@@ -19,7 +18,7 @@ env:
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
   ECS_SERVICE: ${{ vars.ECS_SERVICE }}
   ECS_CONTAINER_NAME: pulsedesk-api
-  TASK_DEFINITION: ecs/task-definition.json
+  TASK_DEFINITION: pulsedesk-otel-ec2.json
 
 jobs:
   deploy:
@@ -31,14 +30,14 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials through GitHub OIDC
+      - name: Configure AWS credentials from GitHub secrets
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: github-actions-pulsedesk
 
-      - name: Confirm assumed AWS identity
+      - name: Confirm AWS identity
         run: aws sts get-caller-identity
 
       - name: Log in to Amazon ECR
